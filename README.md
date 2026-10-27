@@ -1,115 +1,135 @@
-# Autonomous Multi-Agent Framework for Containerized Vulnerability Exploitation and Regression Tested Remediation
+# DevSecOps Multi-Agent Framework
 
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![Architecture: Multi-Agent](https://img.shields.io/badge/Architecture-Multi--Agent%20(Red%2FBlue%2FCritic)-orange.svg)]()
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)]()
+A Python-based DevSecOps workflow for analyzing code changes, validating suspected vulnerabilities in a sandboxed environment, proposing remediations, and checking that the fix does not regress existing behavior.
 
-Autonomous self-healing DevSecOps framework designed to intercept incoming Git Pull Requests (PRs), dynamically validate security vulnerabilities through containerized active software exploitation, and synthesize verified patches without human intervention.
+This project is organized as a reusable Python package named `devsecops_agent` and exposes a CLI for running scans against a local repository or a remote Git URL.
 
----
+## What it does
 
-## 🏛️ System Architecture
+The framework follows a closed-loop remediation flow:
 
-```mermaid
-flowchart TD
-    PR[Git Pull Request / CLI Trigger] --> CE[Context Extractor<br/>Git Diff + AST Dependency Analysis]
-    CE --> SB[Dynamic Sandbox Manager<br/>Docker Container / Local Subprocess Isolation]
-    
-    subgraph MultiAgentSystem ["Autonomous Multi-Agent Orchestrator"]
-        AO[Async Orchestrator<br/>State Machine Engine]
-        
-        AA[Attacker Agent - Red Team<br/>Generates & executes functional exploit test script]
-        PA[Patcher Agent - Blue Team<br/>Root-Cause Analysis & patch synthesis]
-        CA[Critic Agent<br/>AST structural audit to prevent bypasses/cheats]
-        
-        AO <-->|JSON Exploit Request & Report| AA
-        AO <-->|JSON Patch Task & Patch Diff| PA
-        AO <-->|JSON Audit Request & Verdict| CA
-    end
-    
-    SB <-->|Execute Exploit & Regression| AO
-    
-    AO -->|Passed Verification & Critic Audit| PR_OUT[Submit Verified PR<br/>+ OWASP Classification + Exploit Evidence]
-    AO -->|Exploit Failed to Reproduce| FP[Flag Candidate as False Positive]
-```
+1. Extracts a Git diff or PR context from a repository.
+2. Identifies Python code candidates that may contain security issues.
+3. Runs exploit or verification logic in an isolated sandbox.
+4. Uses a multi-agent workflow (`attacker`, `patcher`, `critic`) to reason about the issue.
+5. Applies and verifies a remediation patch.
+6. Writes a markdown report and, optionally, creates a remediation branch with the final verified fix.
 
----
+## Key features
 
-## 👥 Team Module Allocation (Group 14)
+- Diff-driven security analysis
+- Multi-agent orchestration for exploit validation and remediation
+- Sandbox execution via Docker or local execution
+- LLM provider abstraction (`mock`, `ollama`, `openai`, `gemini`)
+- CLI-based workflow for repository scanning and reporting
+- Regression-focused patch verification
+- Markdown reporting for candidate analysis and remediation results
 
-| Team Member | Module Scope | Responsibilities | Target Components |
-|---|---|---|---|
-| **Agnij T Dev** | **Core Orchestration & CI/CD** | Async orchestrator engine, JSON communication schemas, GitHub Actions / CI trigger integration | `src/orchestrator/`, `src/schemas/`, `.github/workflows/`, `src/cli.py` |
-| **Anzer Farooq Ganie** | **Attacker Agent (Red Team)** | Exploit script generation, sandbox execution, crash and data leak detection | `src/agents/attacker.py`, `src/sandbox/` |
-| **Maleeha Beefathima** | **Patcher Agent (Blue Team)** | Root-cause analysis, patch synthesis, hybrid model backend (Ollama + hosted LLMs) | `src/agents/patcher.py`, `src/llm/` |
-| **Niya P Sherry** | **Critic Agent & Evaluation** | AST diff auditing (blocking fake fixes / error suppression), regression test harness, OWASP Top 10 benchmark | `src/agents/critic.py`, `src/eval/`, `benchmarks/` |
+## Repository layout
 
----
+- `src/devsecops_agent/` — main Python package
+  - `agents/` — attacker, patcher, critic, and shared agent logic
+  - `context/` — diff and code-context extraction
+  - `orchestrator/` — orchestration pipeline and workflow coordination
+  - `sandbox/` — execution environment for exploit and regression checks
+  - `schemas/` — structured request/response models
+  - `llm/` — LLM integration points
+  - `cli.py` — command-line entrypoint
+  - `config.py` — environment-driven settings
+- `tests/` — pytest suite for orchestrator, schema, critic, sandbox, and CLI behavior
+- `benchmarks/` — benchmark applications used for validation scenarios
+- `demo_app.py` — small Flask demo app used for example workflows
+- `report.md`, `report_cmdi.md` — example output reports
+- `.env.example` — environment template
+- `Dockerfile.sandbox` — sandbox image definition
 
-## 🚀 Key Features
-
-1. **Active Dynamic Verification (Red Team)**:
-   Replaces theoretical static alerts with runtime verification. If an exploit script cannot trigger a crash or data leak in the sandbox, the alert is automatically pruned as a **False Positive**.
-2. **Autonomous Closed-Loop Remediation (Blue Team)**:
-   Synthesizes root-cause fixes and binds dynamic execution results directly back into the LLM reasoning window.
-3. **Dual Verification Closure**:
-   - `VerifyExploitBlocked(F, E)`: The original attack script must now fail/be blocked.
-   - `VerifyRegression(F)`: The application's pre-existing regression test suite must pass 100%.
-4. **Anti-Cheat Structural Critic**:
-   Audits the Python AST diff before applying patches to reject evasion anti-patterns (such as `sys.exit(0)`, blanket `except: pass`, or deleting route endpoints).
-5. **Hybrid Cost-Adaptable Model Routing**:
-   Runs lower-complexity tasks (Critic audit, static triage) locally via Ollama (`qwen2.5-coder`, `deepseek-coder`) and escalates high-complexity synthesis (Patcher RCA) to hosted models (Gemini / GPT).
-
----
-
-## 📦 Installation & Setup
+## Installation
 
 ```bash
-# Clone the repository
-cd main_project
-
-# Install package in editable mode with development dependencies
+git clone https://github.com/agnijtdev/project_main.git
+cd project_main
+python -m venv .venv
+source .venv/bin/activate
 pip install -e .[dev]
+cp .env.example .env
 ```
 
-### Environment Configuration (.env)
-Create a `.env` file in the root directory (optional):
+## Configuration
+
+The project reads settings from a local `.env` file. A template is provided in `.env.example`.
+
+Example configuration:
+
 ```env
-LLM_PROVIDER=mock          # Options: 'mock', 'ollama', 'openai', 'gemini'
+LLM_PROVIDER=mock
+SANDBOX_DRIVER=docker
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_DEFAULT_MODEL=qwen2.5-coder:7b
-HOSTED_LLM_API_KEY=your_api_key_here
-GEMINI_API_KEY=your_gemini_key_here
-SANDBOX_DRIVER=auto        # Options: 'auto', 'docker', 'local'
+GEMINI_API_KEY=
+OPENAI_API_KEY=
 ```
 
----
+Supported values include:
 
-## 💻 CLI Usage
+- `LLM_PROVIDER`: `mock`, `ollama`, `openai`, `gemini`
+- `SANDBOX_DRIVER`: `auto`, `docker`, `local`
 
-### 1. Scan a Pull Request or Diff
+## CLI usage
+
+### Scan a local repository
+
 ```bash
-devsecops-agent scan --repo . --diff-file pr.diff --test-cmd "pytest" --output-report report.md
+devsecops-agent scan \
+  --repo . \
+  --base-branch main \
+  --head-branch feature/my-change \
+  --test-cmd "pytest -q" \
+  --driver docker \
+  --provider mock \
+  --output-report reports/remediation_report.md
 ```
 
-### 2. View System Version
+### Scan a remote Git repository
+
+```bash
+devsecops-agent scan \
+  --repo https://github.com/example/project.git \
+  --base-branch main \
+  --head-branch feature/update \
+  --driver docker
+```
+
+### Show the current version
+
 ```bash
 devsecops-agent version
 ```
 
----
-
-## 🧪 Running Tests
+## Running tests
 
 ```bash
-# Run full unit and integration test suite
-pytest -v
+pytest -q
 ```
 
----
+The suite covers:
 
-## 📊 Evaluation Benchmarks
+- CLI remediation flow
+- context extraction logic
+- AST-based critic checks
+- sandbox execution behavior
+- orchestrator pipeline behavior
+- schema validation
 
-Pre-configured vulnerable benchmark applications are available under `benchmarks/`:
-- `benchmarks/vulnerable_flask_sqli/`: OWASP A03:2021 Injection (SQLi CWE-89)
-- `benchmarks/vulnerable_flask_cmdi/`: OWASP A03:2021 Injection (Command Injection CWE-78)
+## Example app
+
+`demo_app.py` is a minimal Flask application used to demonstrate scanning and validation behavior. It is not the main product itself; it is a lightweight example used in testing and demonstration flows.
+
+## Notes
+
+- The project is designed for Python 3.10+
+- Containerized or local sandbox execution is supported depending on the selected driver
+- Reporting is generated as markdown, which can be reviewed after each scan run
+
+## License
+
+This project is intended for research, experimentation, and security-focused automation workflows.
