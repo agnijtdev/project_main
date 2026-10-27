@@ -1,0 +1,12 @@
+diff --git a/app.py b/app.py
+index 1000000..2000000 100644
+--- a/app.py
++++ b/app.py
+@@ -19,4 +19,5 @@ def get_user():
+     cursor = conn.cursor()
+-    # Safe query placeholder
+-    user = None
++    # Query user from database
++    query = f"SELECT username, role FROM users WHERE username = '{username}'"
++    cursor.execute(query)
++    user = cursor.fetchone()

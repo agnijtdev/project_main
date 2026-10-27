@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "devsecops-multiagent"
+version = "0.1.0"
+description = "Autonomous Multi-Agent Framework for Containerized Vulnerability Exploitation and Regression Tested Remediation"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "Agnij T Dev", email = "agnij@example.com" },
+    { name = "Anzer Farooq Ganie" },
+    { name = "Maleeha Beefathima" },
+    { name = "Niya P Sherry" }
+]
+dependencies = [
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "docker>=7.0.0",
+    "gitpython>=3.1.40",
+    "rich>=13.7.0",
+    "typer>=0.9.0",
+    "httpx>=0.26.0",
+    "jinja2>=3.1.2",
+    "pyyaml>=6.0.1"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "pytest-cov>=4.1.0",
+    "black>=24.0.0",
+    "ruff>=0.2.0"
+]
+
+[project.scripts]
+devsecops-agent = "devsecops_agent.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

@@ -1,0 +1,11 @@
+diff --git a/app.py b/app.py
+index 3000000..4000000 100644
+--- a/app.py
++++ b/app.py
+@@ -10,4 +10,5 @@ def ping_host():
+     if not host:
+         return jsonify({"error": "Missing host parameter"}), 400
+-    return jsonify({"status": "disabled"}), 200
++    cmd = f"ping -c 1 {host}"
++    result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=5)
++    return jsonify({"output": result.stdout, "status": "success"}), 200
